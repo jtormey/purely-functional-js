@@ -1,13 +1,7 @@
-let fs = require('fs')
-let { map, lensProp, lensIndex, set, range, traverse } = require('ramda')
-let { IO, Either, Reader, Future } = require('ramda-fantasy')
+let { map, lensProp, set, range, traverse } = require('ramda')
+let { Reader, Future } = require('ramda-fantasy')
+let { trace, readFile, runFuture, parseJson, request } = require('./builtin')
 let ReaderTFuture = Reader.T(Future)
-
-let users = [
-  { id: 0, name: 'jt' },
-  { id: 1, name: 'jaume' },
-  { id: 2, name: 'phil' }
-]
 
 /* PLAN
     1. read a file (IO)
@@ -16,38 +10,16 @@ let users = [
     4. url to call api (Future)
 */
 
-let loadEnv = (env) => IO(() => fs.readFileSync(env).toString())
-let consoleError = (data) => IO(() => console.error(data))
-let error = (e) => { throw new Error(e) }
-
-let runFuture = (future) => IO(() => future.fork(
-  error => process.stderr.write('ERROR: ' + error + '\n'),
-  value => process.stdout.write(value + '\n')
-))
-
-let tryEither = (f, ...args) => {
-  try {
-    let result = f.apply(f, args)
-    return Either.of(result)
-  } catch (e) {
-    return Either.Left(e.message)
-  }
-}
-
-// callUsersApi :: ([User] -> a) -> ReaderT Env (Future String) a
-let callUsersApi = (f) => ReaderTFuture(env => Future((reject, resolve) => {
-  console.log('calling api:', env.apiUrl)
-  setTimeout(() => tryEither(f, users).either(reject, resolve), 500)
-}))
+// callApi :: String -> Object -> ReaderT Env (Future String) a
+let callApi = (endpoint, data) => ReaderTFuture(env =>
+  request(env.apiUrl + endpoint, data)
+)
 
 // fetchUser :: Int -> ReaderT Env (Future String) User
-let fetchUser = (id) => callUsersApi(users => users[id])
+let fetchUser = (id) => callApi('/users', { id })
 
 // saveUser :: User -> ReaderT Env (Future String) [User]
-let saveUser = (user) => callUsersApi(users => users[user.id] == null
-  ? error('User not found')
-  : set(lensIndex(user.id), user, users)
-)
+let saveUser = (user) => callApi('/users/save', user)
 
 // main :: () -> ReaderT Env (Future String) String
 let main = () => (
@@ -58,9 +30,10 @@ let main = () => (
   )
 )
 
-let program = loadEnv('./env.json')
-  .map(env => tryEither(JSON.parse, env))
+// program :: IO ()
+let program = readFile('./env.json')
+  .map(parseJson)
   .map(map(env => main().run(env)))
-  .chain(program => program.either(consoleError, runFuture))
+  .chain(program => program.either(trace, runFuture))
 
 module.exports = program

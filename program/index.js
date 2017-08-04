@@ -7,13 +7,6 @@ let { parseJson } = require('../builtin/string')
 
 let ReaderTFuture = Reader.T(Future)
 
-/* PLAN
-    1. read a file (IO)
-    2. parse as json (Either)
-    3. use as env (Reader)
-    4. url to call api (Future)
-*/
-
 // callApi :: String -> Object -> ReaderT Env (Future String) a
 let callApi = (endpoint, data) => ReaderTFuture(env =>
   request(env.apiUrl + endpoint, data)

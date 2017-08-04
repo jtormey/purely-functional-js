@@ -1,0 +1,14 @@
+{
+  "name": "ramda-fantasy-playground",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "dependencies": {
+    "ramda": "^0.24.1",
+    "ramda-fantasy": "^0.8.0",
+    "ramda-lens": "^0.1.2"
+  },
+  "devDependencies": {
+    "standard": "^10.0.2"
+  }
+}

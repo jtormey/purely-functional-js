@@ -1,6 +1,10 @@
 let { map, lensProp, set, range, traverse } = require('ramda')
 let { Reader, Future } = require('ramda-fantasy')
-let { trace, readFile, runFuture, parseJson, request } = require('./builtin')
+
+let { trace, readFile, runFuture } = require('../builtin/io')
+let { request } = require('../builtin/http')
+let { parseJson } = require('../builtin/string')
+
 let ReaderTFuture = Reader.T(Future)
 
 /* PLAN
@@ -31,7 +35,7 @@ let main = () => (
 )
 
 // program :: IO ()
-let program = readFile('./env.json')
+let program = readFile('../env.json')
   .map(parseJson)
   .map(map(env => main().run(env)))
   .chain(program => program.either(trace, runFuture))

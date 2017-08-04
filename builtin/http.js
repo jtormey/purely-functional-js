@@ -2,7 +2,7 @@
 let { set, view, lensProp, lensIndex, compose } = require('ramda')
 let { Future } = require('ramda-fantasy')
 let { syslog } = require('./_util')
-let { apiUrl } = require('../env')
+let domain = 'https://api.com'
 
 let mockBackend = {
   users: [
@@ -27,10 +27,10 @@ exports.request = ((backend) => (url, data = {}) => {
   }
 
   switch (url) {
-    case `${apiUrl}/users`: {
+    case `${domain}/users`: {
       return response.map(() => backend.users[data.id])
     }
-    case `${apiUrl}/users/save`: {
+    case `${domain}/users/save`: {
       backend = set(userLens, data, backend)
       return response.map(() => backend.users)
     }

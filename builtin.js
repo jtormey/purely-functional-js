@@ -1,18 +1,10 @@
 /* Simulate built-in functions */
 let fs = require('fs')
 let env = require('./env')
-let { set, view, lensProp, lensIndex, compose } = require('ramda')
 let { IO, Future, Either } = require('ramda-fantasy')
+let backend = require('./backend')
 
-let mockDomain = env.apiUrl
-
-let mockBackend = {
-  users: [
-    { id: 0, name: 'jt' },
-    { id: 1, name: 'jaume' },
-    { id: 2, name: 'phil' }
-  ]
-}
+let mockBackend = backend.create(env.apiUrl)
 
 let syslog = (name, log) => console.log('>> system.' + name, `"${log}"`)
 
@@ -46,26 +38,8 @@ exports.parseJson = (json) => {
 exports.delay = (time) => Future((_, resolve) => setTimeout(resolve, time))
 
 // request :: String -> Object -> Future String a
-exports.request = ((backend) => (url, data = {}) => {
+exports.request = (url, data = {}) => {
   syslog('http', url)
-
   let response = exports.delay(500)
-  let userLens = compose(lensProp('users'), lensIndex(data.id))
-
-  if (view(userLens, backend) == null) {
-    return response.chain(() => Future.reject('User not found'))
-  }
-
-  switch (url) {
-    case `${mockDomain}/users`: {
-      return response.map(() => backend.users[data.id])
-    }
-    case `${mockDomain}/users/save`: {
-      backend = set(userLens, data, backend)
-      return response.map(() => backend.users)
-    }
-    default: {
-      return response.chain(() => Future.reject(`${url} - 404`))
-    }
-  }
-})(mockBackend)
+  return mockBackend.call(url, data, response)
+}
